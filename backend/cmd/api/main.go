@@ -153,6 +153,7 @@ var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { retu
 
 func main() {
 	cfg := appconfig.Load()
+	allowedOrigins := buildAllowedOrigins(cfg.AllowedOrigins)
 
 	db, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {
@@ -172,6 +173,10 @@ func main() {
 	authHandler := authmodule.NewHandler(db, app.jwt)
 
 	r := gin.Default()
+	r.Use(corsMiddleware(allowedOrigins))
+	upgrader.CheckOrigin = func(r *http.Request) bool {
+		return isOriginAllowed(allowedOrigins, r.Header.Get("Origin"))
+	}
 
 	bootstrap.BuildHTTPRouter(r, httpapp.Dependencies{
 		AppVersion:     cfg.AppVersion,
@@ -406,14 +411,27 @@ func (a *App) joinInviteHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid invite"})
 		return
 	}
-	_, _ = tx.Exec(c.Request.Context(), `insert into community_members(community_id,user_id,role) values($1,$2,'member') on conflict (community_id,user_id) do nothing`, cid, uid)
-	_, _ = tx.Exec(c.Request.Context(), `update invites set uses_count=uses_count+1 where code=$1`, code)
-	_, _ = tx.Exec(c.Request.Context(), `insert into audit_log(id,community_id,actor_user_id,action_type,target) values($1,$2,$3,$4,$5::jsonb)`, uuid.NewString(), cid, uid, "member.join", `{"userId":"`+uid+`"}`)
+	memberInsertResult, err := tx.Exec(c.Request.Context(), `insert into community_members(community_id,user_id,role) values($1,$2,'member') on conflict (community_id,user_id) do nothing`, cid, uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "member join failed"})
+		return
+	}
+	joined := memberInsertResult.RowsAffected() == 1
+	if joined {
+		if _, err = tx.Exec(c.Request.Context(), `update invites set uses_count=uses_count+1 where code=$1`, code); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "invite update failed"})
+			return
+		}
+		if _, err = tx.Exec(c.Request.Context(), `insert into audit_log(id,community_id,actor_user_id,action_type,target) values($1,$2,$3,$4,$5::jsonb)`, uuid.NewString(), cid, uid, "member.join", `{"userId":"`+uid+`"}`); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "audit log failed"})
+			return
+		}
+	}
 	if err = tx.Commit(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "commit failed"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"ok": true, "communityId": cid})
+	c.JSON(http.StatusOK, gin.H{"ok": true, "communityId": cid, "joined": joined})
 }
 
 func (a *App) createChannelHandler(c *gin.Context) {
@@ -654,18 +672,29 @@ func (a *App) exportHandler(c *gin.Context) {
 func (a *App) voiceTokenHandler(c *gin.Context) {
 	var body struct {
 		ChannelID string `json:"channelId"`
-		UserID    string `json:"userId"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil || body.ChannelID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
 		return
 	}
-	if body.UserID == "" {
-		body.UserID = userID(c)
+	uid := userID(c)
+	var communityID string
+	var channelType string
+	if err := a.db.QueryRow(c.Request.Context(), `select community_id,type from channels where id=$1`, body.ChannelID).Scan(&communityID, &channelType); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "channel not found"})
+		return
+	}
+	if channelType != "voice" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "channel is not voice"})
+		return
+	}
+	if !a.hasMembership(c.Request.Context(), communityID, uid) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
 	}
 	claims := jwt.MapClaims{
 		"iss": a.livekitAPIKey,
-		"sub": body.UserID,
+		"sub": uid,
 		"nbf": time.Now().Unix(),
 		"exp": time.Now().Add(1 * time.Hour).Unix(),
 		"video": map[string]any{
@@ -681,7 +710,7 @@ func (a *App) voiceTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create livekit token"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"serverUrl": a.livekitPublicURL, "apiKey": a.livekitAPIKey, "room": body.ChannelID, "identity": body.UserID, "token": token})
+	c.JSON(http.StatusOK, gin.H{"serverUrl": a.livekitPublicURL, "apiKey": a.livekitAPIKey, "room": body.ChannelID, "identity": uid, "token": token})
 }
 
 func (a *App) integrationEventHandler(c *gin.Context) {
@@ -694,6 +723,10 @@ func (a *App) integrationEventHandler(c *gin.Context) {
 }
 
 func (a *App) telemetryOptInHandler(c *gin.Context) {
+	if !a.hasAdminAccess(c.Request.Context(), userID(c)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
 	var body struct {
 		Enabled bool `json:"enabled"`
 	}
@@ -710,6 +743,10 @@ func (a *App) telemetryOptInHandler(c *gin.Context) {
 }
 
 func (a *App) telemetryStatusHandler(c *gin.Context) {
+	if !a.hasAdminAccess(c.Request.Context(), userID(c)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
 	var st TelemetryState
 	err := a.db.QueryRow(c.Request.Context(), `select enabled,updated_at from telemetry_settings where id=true`).Scan(&st.Enabled, &st.LastSentAt)
 	if err != nil {
@@ -720,6 +757,10 @@ func (a *App) telemetryStatusHandler(c *gin.Context) {
 }
 
 func (a *App) telemetryPolicyHandler(c *gin.Context) {
+	if !a.hasAdminAccess(c.Request.Context(), userID(c)) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"allow": []string{
 			"cpu", "memory", "disk", "io", "network",
@@ -730,6 +771,14 @@ func (a *App) telemetryPolicyHandler(c *gin.Context) {
 		"deny":      []string{"message_content", "audio_content", "email", "username", "raw_ip", "personal_ids"},
 		"transport": "otlp",
 	})
+}
+
+func (a *App) hasAdminAccess(ctx context.Context, uid string) bool {
+	var allowed bool
+	if err := a.db.QueryRow(ctx, `select exists(select 1 from community_members where user_id=$1 and banned=false and role in ('admin','owner'))`, uid).Scan(&allowed); err != nil {
+		return false
+	}
+	return allowed
 }
 
 func (a *App) wsHandler(c *gin.Context) {
