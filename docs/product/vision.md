@@ -19,7 +19,7 @@ Primary audiences:
 
 ## Product Positioning
 
-Build your own voice community platform. Open-source, self-hosted real-time infrastructure powered by WebRTC.
+Build your own voice community platform. Open-source, self-hosted real-time infrastructure for creators and gaming communities, powered by WebRTC.
 
 The wedge (the why Oris wins):
 1. Voice quality comparable to best-in-class.

@@ -438,7 +438,7 @@ export default function App() {
       <main className="auth-screen">
         <div className="auth-card">
           <h1>Oris</h1>
-          <p>Open-source community voice and text with safe defaults.</p>
+          <p>Self-hosted real-time voice for creators and gaming communities, powered by WebRTC.</p>
           <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="username" />
           <input value={password} type="password" onChange={(e) => setPassword(e.target.value)} placeholder="password" />
           <div className="row">

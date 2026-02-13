@@ -1,6 +1,7 @@
 # Oris Roadmap
 
 This roadmap is outcome-driven. Features exist to achieve product outcomes, not to collect checkboxes.
+Build your own voice community platform. Open-source, self-hosted real-time infrastructure for creators and gaming communities, powered by WebRTC.
 
 ## Phase 0 - Foundations (v0.1)
 

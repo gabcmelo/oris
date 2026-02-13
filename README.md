@@ -1,6 +1,6 @@
 # Oris
 
-Build your own voice community platform. Open-source, self-hosted real-time infrastructure powered by WebRTC.
+Build your own voice community platform. Open-source, self-hosted real-time infrastructure for creators and gaming communities, powered by WebRTC.
 
 ## System overview
 1. Backend: Go + Gin + PostgreSQL (+ Redis support)
