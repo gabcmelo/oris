@@ -8,8 +8,9 @@
 ## Product
 1. Vision: `docs/product/vision.md`
 2. Roadmap: `docs/product/roadmap.md`
-3. Feature specs: `docs/product/features/`
-4. Sprint/tasks: `docs/product/tasks/`
+3. Extensions spec: `docs/product/oris-extensions-spec.md`
+4. Feature specs: `docs/product/features/`
+5. Sprint/tasks: `docs/product/tasks/`
 
 ## Operations
 1. Local dev: `docs/runbooks/local-dev.md`
