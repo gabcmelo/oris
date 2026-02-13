@@ -1,0 +1,10 @@
+name: Release placeholder
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release-note:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Release workflow placeholder. Implement when release process is finalized."

@@ -1,0 +1,14 @@
+flowchart TD
+  User[User]
+  Web[Frontend React/Vite]
+  API[Backend Go/Gin]
+  DB[(PostgreSQL)]
+  Redis[(Redis)]
+  LiveKit[LiveKit]
+
+  User --> Web
+  Web --> API
+  API --> DB
+  API --> Redis
+  Web --> LiveKit
+  API --> LiveKit

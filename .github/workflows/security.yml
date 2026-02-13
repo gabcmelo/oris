@@ -1,0 +1,10 @@
+name: Security placeholder
+
+on:
+  workflow_dispatch:
+
+jobs:
+  security-note:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Security workflow placeholder. Enable SAST/dependency scanning in next phase."

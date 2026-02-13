@@ -1,0 +1,16 @@
+sequenceDiagram
+  participant U as User
+  participant FE as Frontend
+  participant API as Backend
+  participant DB as Postgres
+  participant LK as LiveKit
+
+  U->>FE: Login
+  FE->>API: POST /auth/login
+  API->>DB: validate credentials
+  API-->>FE: access/refresh tokens
+
+  U->>FE: Join voice channel
+  FE->>API: POST /voice/token
+  API-->>FE: livekit token
+  FE->>LK: connect(room, token)

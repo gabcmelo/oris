@@ -1,0 +1,2 @@
+-- SafeGuild postgres init placeholder.
+-- Main schema files currently live in ../../database/migrations.

@@ -1,0 +1,796 @@
+package main
+
+import (
+	"encoding/csv"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	"golang.org/x/crypto/bcrypt"
+)
+
+type User struct {
+	ID           string    `json:"id"`
+	Email        string    `json:"email"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"-"`
+	CreatedAt    time.Time `json:"createdAt"`
+}
+
+type Community struct {
+	ID              string    `json:"id"`
+	Name            string    `json:"name"`
+	OwnerUserID     string    `json:"ownerUserId"`
+	SafeModeEnabled bool      `json:"safeModeEnabled"`
+	CreatedAt       time.Time `json:"createdAt"`
+}
+
+type Member struct {
+	CommunityID string `json:"communityId"`
+	UserID      string `json:"userId"`
+	Role        string `json:"role"`
+	Muted       bool   `json:"muted"`
+	Banned      bool   `json:"banned"`
+}
+
+type Channel struct {
+	ID          string    `json:"id"`
+	CommunityID string    `json:"communityId"`
+	Name        string    `json:"name"`
+	Type        string    `json:"type"`
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+type Message struct {
+	ID        string    `json:"id"`
+	ChannelID string    `json:"channelId"`
+	AuthorID  string    `json:"authorUserId"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type Invite struct {
+	Code        string    `json:"code"`
+	CommunityID string    `json:"communityId"`
+	ExpiresAt   time.Time `json:"expiresAt"`
+	MaxUses     int       `json:"maxUses"`
+	UsesCount   int       `json:"usesCount"`
+}
+
+type AuditLog struct {
+	ID          string         `json:"id"`
+	CommunityID string         `json:"communityId"`
+	ActorUserID string         `json:"actorUserId"`
+	ActionType  string         `json:"actionType"`
+	Target      map[string]any `json:"target"`
+	CreatedAt   time.Time      `json:"createdAt"`
+}
+
+type TelemetryState struct {
+	Enabled    bool      `json:"enabled"`
+	LastSentAt time.Time `json:"lastSentAt"`
+}
+
+type wsHub struct {
+	mu       sync.RWMutex
+	channels map[string]map[*websocket.Conn]string
+}
+
+func newHub() *wsHub {
+	return &wsHub{channels: map[string]map[*websocket.Conn]string{}}
+}
+
+func (h *wsHub) register(channelID, uid string, c *websocket.Conn) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if _, ok := h.channels[channelID]; !ok {
+		h.channels[channelID] = map[*websocket.Conn]string{}
+	}
+	h.channels[channelID][c] = uid
+}
+
+func (h *wsHub) unregister(channelID string, c *websocket.Conn) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if _, ok := h.channels[channelID]; !ok {
+		return
+	}
+	delete(h.channels[channelID], c)
+	if len(h.channels[channelID]) == 0 {
+		delete(h.channels, channelID)
+	}
+}
+
+func (h *wsHub) broadcastMessage(channelID string, msg Message) {
+	h.mu.RLock()
+	clients := h.channels[channelID]
+	h.mu.RUnlock()
+	if len(clients) == 0 {
+		return
+	}
+	payload := gin.H{"type": "message.created", "data": msg}
+	for conn := range clients {
+		_ = conn.WriteJSON(payload)
+	}
+}
+
+type AppState struct {
+	mu            sync.RWMutex
+	users         map[string]User
+	usersByName   map[string]string
+	refreshTokens map[string]string
+	communities   map[string]Community
+	members       map[string][]Member
+	channels      map[string]Channel
+	messages      map[string][]Message
+	invites       map[string]Invite
+	auditLogs     map[string][]AuditLog
+	telemetry     TelemetryState
+	hub           *wsHub
+}
+
+var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+
+func main() {
+	jwtSecret := envOr("JWT_SECRET", "dev-secret")
+	appVersion := envOr("APP_VERSION", "0.1.0")
+	appChannel := envOr("APP_CHANNEL", "stable")
+	livekitURL := envOr("LIVEKIT_URL", "ws://livekit:7880")
+	livekitAPIKey := envOr("LIVEKIT_API_KEY", "devkey")
+	livekitAPISecret := envOr("LIVEKIT_API_SECRET", "secret")
+
+	state := &AppState{
+		users:         map[string]User{},
+		usersByName:   map[string]string{},
+		refreshTokens: map[string]string{},
+		communities:   map[string]Community{},
+		members:       map[string][]Member{},
+		channels:      map[string]Channel{},
+		messages:      map[string][]Message{},
+		invites:       map[string]Invite{},
+		auditLogs:     map[string][]AuditLog{},
+		hub:           newHub(),
+	}
+
+	r := gin.Default()
+	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"ok": true}) })
+
+	v1 := r.Group("/api/v1")
+	{
+		v1.POST("/auth/register", registerHandler(state, jwtSecret))
+		v1.POST("/auth/login", loginHandler(state, jwtSecret))
+		v1.POST("/auth/refresh", refreshHandler(state, jwtSecret))
+		v1.POST("/auth/logout", logoutHandler(state))
+		v1.GET("/system/version", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"version": appVersion, "channel": appChannel})
+		})
+		v1.POST("/system/upgrade/check", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"latestVersion": appVersion, "channel": appChannel, "updateAvailable": false})
+		})
+
+		auth := v1.Group("/")
+		auth.Use(authMiddleware(jwtSecret))
+		{
+			auth.GET("/me", meHandler(state))
+			auth.POST("/communities", createCommunityHandler(state))
+			auth.GET("/communities", listCommunitiesHandler(state))
+			auth.GET("/communities/:communityId", getCommunityHandler(state))
+			auth.POST("/communities/:communityId/invites", createInviteHandler(state))
+			auth.POST("/invites/:code/join", joinInviteHandler(state))
+			auth.POST("/communities/:communityId/channels", createChannelHandler(state))
+			auth.GET("/communities/:communityId/channels", listChannelsHandler(state))
+			auth.GET("/channels/:channelId/messages", listMessagesHandler(state))
+			auth.POST("/channels/:channelId/messages", postMessageHandler(state))
+			auth.POST("/communities/:communityId/moderation/kick", moderationHandler(state, "kick"))
+			auth.POST("/communities/:communityId/moderation/mute", moderationHandler(state, "mute"))
+			auth.POST("/communities/:communityId/moderation/ban", moderationHandler(state, "ban"))
+			auth.GET("/communities/:communityId/audit-logs", listAuditLogsHandler(state))
+			auth.GET("/communities/:communityId/exports", exportHandler(state))
+			auth.POST("/voice/token", voiceTokenHandler(livekitURL, livekitAPIKey, livekitAPISecret))
+			auth.POST("/integrations/events", integrationEventHandler())
+			auth.POST("/admin/telemetry/opt-in", telemetryOptInHandler(state))
+			auth.GET("/admin/telemetry/status", telemetryStatusHandler(state))
+			auth.GET("/admin/telemetry/policy", telemetryPolicyHandler())
+			auth.GET("/ws/:channelId", wsHandler(state, jwtSecret))
+		}
+	}
+
+	log.Printf("SafeGuild API on :8080")
+	if err := r.Run(":8080"); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func envOr(k, fallback string) string {
+	v := os.Getenv(k)
+	if v == "" {
+		return fallback
+	}
+	return v
+}
+
+func tokenForUser(userID, secret string, ttl time.Duration) (string, error) {
+	claims := jwt.MapClaims{"sub": userID, "exp": time.Now().Add(ttl).Unix()}
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return t.SignedString([]byte(secret))
+}
+
+func parseUserFromJWT(tokenRaw, secret string) (string, error) {
+	tok, err := jwt.Parse(tokenRaw, func(t *jwt.Token) (any, error) { return []byte(secret), nil })
+	if err != nil || !tok.Valid {
+		return "", err
+	}
+	claims, ok := tok.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", jwt.ErrTokenMalformed
+	}
+	sub, ok := claims["sub"].(string)
+	if !ok || sub == "" {
+		return "", jwt.ErrTokenInvalidClaims
+	}
+	return sub, nil
+}
+
+func authMiddleware(secret string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		auth := c.GetHeader("Authorization")
+		parts := strings.Split(auth, " ")
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing bearer token"})
+			return
+		}
+		sub, err := parseUserFromJWT(parts[1], secret)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			return
+		}
+		c.Set("userID", sub)
+		c.Next()
+	}
+}
+
+func userID(c *gin.Context) string {
+	v, _ := c.Get("userID")
+	s, _ := v.(string)
+	return s
+}
+
+func registerHandler(s *AppState, secret string) gin.HandlerFunc {
+	type req struct{ Email, Username, Password string }
+	return func(c *gin.Context) {
+		var r req
+		if err := c.ShouldBindJSON(&r); err != nil || r.Username == "" || len(r.Password) < 6 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+			return
+		}
+
+		hash, err := bcrypt.GenerateFromPassword([]byte(r.Password), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+			return
+		}
+
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if _, exists := s.usersByName[r.Username]; exists {
+			c.JSON(http.StatusConflict, gin.H{"error": "username taken"})
+			return
+		}
+		u := User{ID: uuid.NewString(), Email: r.Email, Username: r.Username, PasswordHash: string(hash), CreatedAt: time.Now()}
+		s.users[u.ID] = u
+		s.usersByName[u.Username] = u.ID
+		access, _ := tokenForUser(u.ID, secret, 15*time.Minute)
+		refresh, _ := tokenForUser(u.ID, secret, 24*time.Hour)
+		s.refreshTokens[refresh] = u.ID
+		c.JSON(http.StatusCreated, gin.H{"user": gin.H{"id": u.ID, "email": u.Email, "username": u.Username, "createdAt": u.CreatedAt}, "accessToken": access, "refreshToken": refresh})
+	}
+}
+
+func loginHandler(s *AppState, secret string) gin.HandlerFunc {
+	type req struct{ Username, Password string }
+	return func(c *gin.Context) {
+		var r req
+		if err := c.ShouldBindJSON(&r); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+			return
+		}
+		s.mu.RLock()
+		uid, ok := s.usersByName[r.Username]
+		u := s.users[uid]
+		s.mu.RUnlock()
+		if !ok || bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(r.Password)) != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+			return
+		}
+		access, _ := tokenForUser(uid, secret, 15*time.Minute)
+		refresh, _ := tokenForUser(uid, secret, 24*time.Hour)
+		s.mu.Lock()
+		s.refreshTokens[refresh] = uid
+		s.mu.Unlock()
+		c.JSON(http.StatusOK, gin.H{"accessToken": access, "refreshToken": refresh})
+	}
+}
+
+func refreshHandler(s *AppState, secret string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var body struct{ RefreshToken string `json:"refreshToken"` }
+		if err := c.ShouldBindJSON(&body); err != nil || body.RefreshToken == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+			return
+		}
+		s.mu.RLock()
+		uid, ok := s.refreshTokens[body.RefreshToken]
+		s.mu.RUnlock()
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
+			return
+		}
+		access, _ := tokenForUser(uid, secret, 15*time.Minute)
+		newRefresh, _ := tokenForUser(uid, secret, 24*time.Hour)
+		s.mu.Lock()
+		delete(s.refreshTokens, body.RefreshToken)
+		s.refreshTokens[newRefresh] = uid
+		s.mu.Unlock()
+		c.JSON(http.StatusOK, gin.H{"accessToken": access, "refreshToken": newRefresh})
+	}
+}
+
+func logoutHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var body struct{ RefreshToken string `json:"refreshToken"` }
+		_ = c.ShouldBindJSON(&body)
+		s.mu.Lock()
+		delete(s.refreshTokens, body.RefreshToken)
+		s.mu.Unlock()
+		c.JSON(http.StatusOK, gin.H{"ok": true})
+	}
+}
+
+func meHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		uid := userID(c)
+		s.mu.RLock()
+		u, ok := s.users[uid]
+		s.mu.RUnlock()
+		if !ok {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"user": gin.H{"id": u.ID, "email": u.Email, "username": u.Username, "createdAt": u.CreatedAt}})
+	}
+}
+
+func createCommunityHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var body struct {
+			Name            string `json:"name"`
+			SafeModeEnabled *bool  `json:"safeModeEnabled"`
+		}
+		if err := c.ShouldBindJSON(&body); err != nil || body.Name == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+			return
+		}
+		safe := true
+		if body.SafeModeEnabled != nil {
+			safe = *body.SafeModeEnabled
+		}
+		com := Community{ID: uuid.NewString(), Name: body.Name, OwnerUserID: userID(c), SafeModeEnabled: safe, CreatedAt: time.Now()}
+		s.mu.Lock()
+		s.communities[com.ID] = com
+		s.members[com.ID] = append(s.members[com.ID], Member{CommunityID: com.ID, UserID: com.OwnerUserID, Role: "owner"})
+		addAuditLocked(s, com.ID, com.OwnerUserID, "community.create", map[string]any{"communityId": com.ID})
+		s.mu.Unlock()
+		c.JSON(http.StatusCreated, com)
+	}
+}
+
+func listCommunitiesHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		uid := userID(c)
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		out := []Community{}
+		for cid, m := range s.members {
+			for _, item := range m {
+				if item.UserID == uid && !item.Banned {
+					out = append(out, s.communities[cid])
+				}
+			}
+		}
+		c.JSON(http.StatusOK, gin.H{"items": out})
+	}
+}
+
+func getCommunityHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cid := c.Param("communityId")
+		s.mu.RLock()
+		com, ok := s.communities[cid]
+		s.mu.RUnlock()
+		if !ok {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		c.JSON(http.StatusOK, com)
+	}
+}
+
+func createInviteHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cid := c.Param("communityId")
+		if !hasRole(s, cid, userID(c), "moderator") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			return
+		}
+		var body struct {
+			Hours   int `json:"hours"`
+			MaxUses int `json:"maxUses"`
+		}
+		_ = c.ShouldBindJSON(&body)
+		if body.Hours <= 0 {
+			body.Hours = 24
+		}
+		if body.MaxUses <= 0 {
+			body.MaxUses = 50
+		}
+		inv := Invite{Code: strings.ToUpper(strings.ReplaceAll(uuid.NewString()[:8], "-", "")), CommunityID: cid, ExpiresAt: time.Now().Add(time.Duration(body.Hours) * time.Hour), MaxUses: body.MaxUses}
+		s.mu.Lock()
+		s.invites[inv.Code] = inv
+		addAuditLocked(s, cid, userID(c), "invite.create", map[string]any{"code": inv.Code})
+		s.mu.Unlock()
+		c.JSON(http.StatusCreated, inv)
+	}
+}
+
+func joinInviteHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		code := c.Param("code")
+		uid := userID(c)
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		inv, ok := s.invites[code]
+		if !ok || inv.ExpiresAt.Before(time.Now()) || inv.UsesCount >= inv.MaxUses {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid invite"})
+			return
+		}
+		for _, m := range s.members[inv.CommunityID] {
+			if m.UserID == uid {
+				c.JSON(http.StatusOK, gin.H{"ok": true, "communityId": inv.CommunityID})
+				return
+			}
+		}
+		s.members[inv.CommunityID] = append(s.members[inv.CommunityID], Member{CommunityID: inv.CommunityID, UserID: uid, Role: "member"})
+		inv.UsesCount++
+		s.invites[code] = inv
+		addAuditLocked(s, inv.CommunityID, uid, "member.join", map[string]any{"userId": uid})
+		c.JSON(http.StatusOK, gin.H{"ok": true, "communityId": inv.CommunityID})
+	}
+}
+
+func createChannelHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cid := c.Param("communityId")
+		uid := userID(c)
+		if !hasRole(s, cid, uid, "moderator") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			return
+		}
+		var body struct{ Name, Type string }
+		if err := c.ShouldBindJSON(&body); err != nil || body.Name == "" || (body.Type != "text" && body.Type != "voice") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+			return
+		}
+		ch := Channel{ID: uuid.NewString(), CommunityID: cid, Name: body.Name, Type: body.Type, CreatedAt: time.Now()}
+		s.mu.Lock()
+		s.channels[ch.ID] = ch
+		addAuditLocked(s, cid, uid, "channel.create", map[string]any{"channelId": ch.ID})
+		s.mu.Unlock()
+		c.JSON(http.StatusCreated, ch)
+	}
+}
+
+func listChannelsHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cid := c.Param("communityId")
+		if !hasAnyMembership(s, cid, userID(c)) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			return
+		}
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		out := []Channel{}
+		for _, ch := range s.channels {
+			if ch.CommunityID == cid {
+				out = append(out, ch)
+			}
+		}
+		c.JSON(http.StatusOK, gin.H{"items": out})
+	}
+}
+
+func listMessagesHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		chID := c.Param("channelId")
+		s.mu.RLock()
+		ch, ok := s.channels[chID]
+		msgs := s.messages[chID]
+		s.mu.RUnlock()
+		if !ok || !hasAnyMembership(s, ch.CommunityID, userID(c)) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"items": msgs})
+	}
+}
+
+func postMessageHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		chID := c.Param("channelId")
+		uid := userID(c)
+		var body struct{ Content string `json:"content"` }
+		if err := c.ShouldBindJSON(&body); err != nil || strings.TrimSpace(body.Content) == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+			return
+		}
+		s.mu.Lock()
+		ch, ok := s.channels[chID]
+		if !ok || !hasAnyMembershipLocked(s, ch.CommunityID, uid) {
+			s.mu.Unlock()
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			return
+		}
+		msg := Message{ID: uuid.NewString(), ChannelID: chID, AuthorID: uid, Content: body.Content, CreatedAt: time.Now()}
+		s.messages[chID] = append(s.messages[chID], msg)
+		s.mu.Unlock()
+		s.hub.broadcastMessage(chID, msg)
+		c.JSON(http.StatusCreated, msg)
+	}
+}
+
+func moderationHandler(s *AppState, action string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cid := c.Param("communityId")
+		actor := userID(c)
+		if !hasRole(s, cid, actor, "moderator") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			return
+		}
+		var body struct{ TargetUserID string `json:"targetUserId"` }
+		if err := c.ShouldBindJSON(&body); err != nil || body.TargetUserID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+			return
+		}
+		s.mu.Lock()
+		members := s.members[cid]
+		for i := range members {
+			if members[i].UserID == body.TargetUserID {
+				switch action {
+				case "kick", "ban":
+					members[i].Banned = true
+				case "mute":
+					members[i].Muted = true
+				}
+			}
+		}
+		s.members[cid] = members
+		addAuditLocked(s, cid, actor, "moderation."+action, map[string]any{"targetUserId": body.TargetUserID})
+		s.mu.Unlock()
+		c.JSON(http.StatusOK, gin.H{"ok": true})
+	}
+}
+
+func listAuditLogsHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cid := c.Param("communityId")
+		if !hasRole(s, cid, userID(c), "moderator") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			return
+		}
+		s.mu.RLock()
+		logs := s.auditLogs[cid]
+		s.mu.RUnlock()
+		c.JSON(http.StatusOK, gin.H{"items": logs})
+	}
+}
+
+func exportHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cid := c.Param("communityId")
+		if !hasRole(s, cid, userID(c), "moderator") {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			return
+		}
+		format := strings.ToLower(c.DefaultQuery("format", "json"))
+		s.mu.RLock()
+		logs := s.auditLogs[cid]
+		s.mu.RUnlock()
+		if format == "csv" {
+			c.Header("Content-Disposition", "attachment; filename=audit.csv")
+			c.Header("Content-Type", "text/csv")
+			w := csv.NewWriter(c.Writer)
+			_ = w.Write([]string{"id", "community_id", "actor_user_id", "action_type", "created_at"})
+			for _, l := range logs {
+				_ = w.Write([]string{l.ID, l.CommunityID, l.ActorUserID, l.ActionType, l.CreatedAt.Format(time.RFC3339)})
+			}
+			w.Flush()
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"communityId": cid, "auditLogs": logs})
+	}
+}
+
+func voiceTokenHandler(url, key, secret string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var body struct {
+			ChannelID string `json:"channelId"`
+			UserID    string `json:"userId"`
+		}
+		if err := c.ShouldBindJSON(&body); err != nil || body.ChannelID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+			return
+		}
+		if body.UserID == "" {
+			body.UserID = userID(c)
+		}
+
+		claims := jwt.MapClaims{
+			"iss": key,
+			"sub": body.UserID,
+			"nbf": time.Now().Unix(),
+			"exp": time.Now().Add(1 * time.Hour).Unix(),
+			"video": map[string]any{
+				"roomJoin":     true,
+				"room":         body.ChannelID,
+				"canPublish":   true,
+				"canSubscribe": true,
+			},
+		}
+		t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		token, err := t.SignedString([]byte(secret))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create livekit token"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"serverUrl": url,
+			"apiKey":    key,
+			"room":      body.ChannelID,
+			"identity":  body.UserID,
+			"token":     token,
+		})
+	}
+}
+
+func integrationEventHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var payload map[string]any
+		if err := c.ShouldBindJSON(&payload); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+			return
+		}
+		c.JSON(http.StatusAccepted, gin.H{"received": true, "next": "integration stub queued"})
+	}
+}
+
+func telemetryOptInHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var body struct{ Enabled bool `json:"enabled"` }
+		if err := c.ShouldBindJSON(&body); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+			return
+		}
+		s.mu.Lock()
+		s.telemetry.Enabled = body.Enabled
+		s.telemetry.LastSentAt = time.Now()
+		s.mu.Unlock()
+		c.JSON(http.StatusOK, gin.H{"ok": true, "enabled": body.Enabled})
+	}
+}
+
+func telemetryStatusHandler(s *AppState) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		s.mu.RLock()
+		st := s.telemetry
+		s.mu.RUnlock()
+		c.JSON(http.StatusOK, st)
+	}
+}
+
+func telemetryPolicyHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"allow": []string{
+				"cpu", "memory", "disk", "io", "network",
+				"api_latency_p95", "api_latency_p99", "api_error_rate", "login_rate", "rate_limit_hits",
+				"ws_active_connections", "ws_reconnections", "channel_join_latency",
+				"voice_active_rooms", "voice_participants", "voice_turn_ratio", "voice_packet_loss_aggregate",
+			},
+			"deny": []string{"message_content", "audio_content", "email", "username", "raw_ip", "personal_ids"},
+			"transport": "otlp",
+		})
+	}
+}
+
+func wsHandler(s *AppState, jwtSecret string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		channelID := c.Param("channelId")
+		tokenRaw := c.Query("token")
+		if tokenRaw == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
+			return
+		}
+		uid, err := parseUserFromJWT(tokenRaw, jwtSecret)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			return
+		}
+
+		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+		if err != nil {
+			return
+		}
+		s.hub.register(channelID, uid, conn)
+		defer func() {
+			s.hub.unregister(channelID, conn)
+			_ = conn.Close()
+		}()
+
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				break
+			}
+		}
+	}
+}
+
+func hasAnyMembership(s *AppState, communityID, uid string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return hasAnyMembershipLocked(s, communityID, uid)
+}
+
+func hasAnyMembershipLocked(s *AppState, communityID, uid string) bool {
+	for _, m := range s.members[communityID] {
+		if m.UserID == uid && !m.Banned {
+			return true
+		}
+	}
+	return false
+}
+
+func hasRole(s *AppState, communityID, uid, minRole string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, m := range s.members[communityID] {
+		if m.UserID != uid || m.Banned {
+			continue
+		}
+		return roleAllowed(m.Role, minRole)
+	}
+	return false
+}
+
+func roleAllowed(actual, min string) bool {
+	order := map[string]int{"member": 1, "moderator": 2, "admin": 3, "owner": 4}
+	return order[actual] >= order[min]
+}
+
+func addAuditLocked(s *AppState, communityID, actor, action string, target map[string]any) {
+	entry := AuditLog{
+		ID:          uuid.NewString(),
+		CommunityID: communityID,
+		ActorUserID: actor,
+		ActionType:  action,
+		Target:      target,
+		CreatedAt:   time.Now(),
+	}
+	s.auditLogs[communityID] = append(s.auditLogs[communityID], entry)
+}

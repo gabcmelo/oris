@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: SafeGuild API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080/api/v1
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+  /auth/login:
+    post:
+      summary: Login
+      responses:
+        "200":
+          description: Access and refresh tokens
+  /communities:
+    get:
+      summary: List communities
+      responses:
+        "200":
+          description: Community list

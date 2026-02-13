@@ -1,0 +1,81 @@
+services:
+  api:
+    build: ../backend
+    container_name: safeguild-api
+    environment:
+      - JWT_SECRET=change-me
+      - DATABASE_URL=postgres://safeguild:safeguild@postgres:5432/safeguild?sslmode=disable
+      - APP_VERSION=0.1.0
+      - APP_CHANNEL=stable
+      - LIVEKIT_URL=ws://livekit:7880
+      - LIVEKIT_PUBLIC_URL=ws://localhost:7880
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=secret
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+      - livekit
+
+  web:
+    build: ../frontend
+    container_name: safeguild-web
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080/api/v1
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+  postgres:
+    image: postgres:16
+    container_name: safeguild-postgres
+    environment:
+      - POSTGRES_USER=safeguild
+      - POSTGRES_PASSWORD=safeguild
+      - POSTGRES_DB=safeguild
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../database/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    container_name: safeguild-redis
+    ports:
+      - "6379:6379"
+
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: safeguild-livekit
+    command: ["--dev", "--bind", "0.0.0.0"]
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "50100-50200:50100-50200/udp"
+
+  telemetry-agent:
+    build: ../telemetry-agent
+    container_name: safeguild-telemetry-agent
+    environment:
+      - OTLP_ENDPOINT=http://otel-collector:4318/v1/metrics
+      - TELEMETRY_ENABLED=false
+      - INSTANCE_ID_SEED=local-dev-instance
+    profiles: ["telemetry"]
+    depends_on:
+      - otel-collector
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.105.0
+    container_name: safeguild-otel
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ../telemetry-agent/otel-collector-config.yaml:/etc/otelcol/config.yaml
+    ports:
+      - "4318:4318"
+    profiles: ["telemetry"]
+
+volumes:
+  pgdata:

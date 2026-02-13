@@ -1,0 +1,30 @@
+name: Task
+description: Track a technical implementation task.
+title: "[Task]: "
+labels: ["task"]
+body:
+  - type: input
+    id: goal
+    attributes:
+      label: Goal
+      placeholder: One sentence objective
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What will be done.
+    validations:
+      required: true
+  - type: textarea
+    id: deliverables
+    attributes:
+      label: Deliverables
+      description: Concrete outputs.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks
