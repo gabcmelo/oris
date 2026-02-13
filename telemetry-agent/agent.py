@@ -19,7 +19,7 @@ while True:
                 {
                     "resource": {
                         "attributes": [
-                            {"key": "service.name", "value": {"stringValue": "safeguild-telemetry-agent"}},
+                            {"key": "service.name", "value": {"stringValue": "oris-telemetry-agent"}},
                             {"key": "instance.id", "value": {"stringValue": instance_id}},
                         ]
                     },
@@ -27,11 +27,11 @@ while True:
                         {
                             "metrics": [
                                 {
-                                    "name": "safeguild.cpu.utilization",
+                                    "name": "oris.cpu.utilization",
                                     "gauge": {"dataPoints": [{"asDouble": random.random()}]},
                                 },
                                 {
-                                    "name": "safeguild.api.latency.p95",
+                                    "name": "oris.api.latency.p95",
                                     "gauge": {"dataPoints": [{"asDouble": random.uniform(10, 120)}]},
                                 },
                             ]

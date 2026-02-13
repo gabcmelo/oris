@@ -1,6 +1,6 @@
 package jwt
 
-import legacy "safeguild/backend/internal/platform/jwtutil"
+import legacy "oris/backend/internal/platform/jwtutil"
 
 type Manager = legacy.Manager
 

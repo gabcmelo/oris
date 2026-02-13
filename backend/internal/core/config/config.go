@@ -1,6 +1,6 @@
 package config
 
-import legacy "safeguild/backend/internal/config"
+import legacy "oris/backend/internal/config"
 
 type Config = legacy.Config
 

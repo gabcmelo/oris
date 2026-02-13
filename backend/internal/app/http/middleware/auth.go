@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	legacy "safeguild/backend/internal/http/middleware"
+	legacy "oris/backend/internal/http/middleware"
 
 	"github.com/gin-gonic/gin"
 )

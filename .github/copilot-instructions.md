@@ -1,4 +1,4 @@
-# SafeGuild / Voz do Povo - Copilot Instructions
+# Oris - Copilot Instructions
 
 ## 1. Product mission
 Build an open-source, self-hosted communication platform similar to Discord, with strong safety defaults for kids, teens, and adults.

@@ -1,8 +1,8 @@
-# Projeto Voz do Povo: especificação técnica e apresentação visual para um sistema open-source de voz seguro e auto-hospedável
+# Projeto Oris: especificação técnica e apresentação visual para um sistema open-source de voz seguro e auto-hospedável
 
 ## Resumo executivo
 
-“Voz do Povo” é um projeto open-source para comunicação por voz (e, opcionalmente, texto) que **qualquer pessoa ou empresa consegue auto-hospedar** em uma VPS (Linux) ou localmente via contêineres — com a mesma “nostalgia do servidor caseiro” (tipo “passa o endereço e entra”), porém com padrões modernos de segurança, privacidade e observabilidade. A proposta central é **reduzir dependência de plataformas centralizadas e fechadas** (como entity["company","Discord","chat and voice platform"]) e tornar as decisões de segurança auditáveis pela comunidade (código aberto + prática de engenharia sólida). citeturn1search0turn1search1
+“Oris” é um projeto open-source para comunicação por voz (e, opcionalmente, texto) que **qualquer pessoa ou empresa consegue auto-hospedar** em uma VPS (Linux) ou localmente via contêineres — com a mesma “nostalgia do servidor caseiro” (tipo “passa o endereço e entra”), porém com padrões modernos de segurança, privacidade e observabilidade. A proposta central é **reduzir dependência de plataformas centralizadas e fechadas** (como entity["company","Discord","chat and voice platform"]) e tornar as decisões de segurança auditáveis pela comunidade (código aberto + prática de engenharia sólida). citeturn1search0turn1search1
 
 O caminho técnico mais realista (e com melhor custo/benefício para multiplataforma) é um modelo **web-first** com **PWA** instalável, somado a “wrappers”/apps para desktop e mobile quando necessário. PWAs exigem HTTPS para serem instaláveis e se baseiam em Service Workers para capacidades de cache/offline e comportamento em segundo plano. citeturn7search0turn7search3turn7search4
 
@@ -70,7 +70,7 @@ A página de apresentação (landing page) precisa funcionar como uma “apresen
 ### Mockup de layout simples (wireframe textual)
 
 ```
-[ NAV ]  Voz do Povo | Docs | Download | Comunidade | GitHub
+[ NAV ]  Oris | Docs | Download | Comunidade | GitHub
 
 [ HERO ]
 H1: Comunicação por voz open‑source. Você hospeda. Você controla.
@@ -293,7 +293,7 @@ Os elementos ICE/STUN/TURN e DTLS-SRTP refletem diretamente os RFCs associados (
 
 #### Servidor de mídia (SFU/gateway): comparação prática
 
-| Opção | Natureza | Pontos fortes | Atenções | Onde brilha no Voz do Povo |
+| Opção | Natureza | Pontos fortes | Atenções | Onde brilha no Oris |
 |---|---|---|---|---|
 | entity["organization","mediasoup","webrtc sfu library"] | SFU “baixo nível” e sinalização agnóstica | Flexível, focado em camada de mídia, integra bem com lógica própria | Requer “orquestração”/código de controle no app (comum em Node) | Produto custom, voz + features específicas |
 | entity["organization","Janus","webrtc server by meetecho"] | Servidor WebRTC geral; troca mensagens (JSON) e faz relay de RTP/RTCP | Versátil e pluginável; bom para “salas” e gateways | Operação e tuning em Linux; Windows não é alvo do projeto upstream | MVP rápido de voz, arquitetura modular |
@@ -621,7 +621,7 @@ O Estatuto define “criança” como pessoa até 12 anos incompletos e “adole
 **GDPR (UE)**  
 O GDPR é o regulamento europeu de proteção de dados, aplicável quando houver oferta/uso por titulares na UE, com obrigações específicas (base legal, transparência, minimização, direitos do titular etc.). citeturn11search2turn11search6  
 
-**Implicações diretas para o Voz do Povo (requisitos de produto, não só “jurídico”)**
+**Implicações diretas para o Oris (requisitos de produto, não só “jurídico”)**
 - Modo “Servidor para menores” como template com defaults: desabilitar DMs por padrão, convites com expiração curta, permissões mais rígidas, logs de auditoria ativos, e linguagem acessível. (A exigência de informação clara e acessível está explicitada na LGPD para dados de crianças). citeturn20view0  
 - Minimização: coletar o mínimo necessário e evitar “features de risco” (ex.: discovery pública por padrão) até haver maturidade de moderação.
 - Transparência do administrador: o painel deve expor “o que coletamos” e “por quanto tempo guardamos”.

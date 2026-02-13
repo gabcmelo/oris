@@ -1,7 +1,7 @@
 package httpapp
 
 import (
-	legacy "safeguild/backend/internal/http/router"
+	legacy "oris/backend/internal/http/router"
 
 	"github.com/gin-gonic/gin"
 )

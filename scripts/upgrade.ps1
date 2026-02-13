@@ -10,7 +10,7 @@ $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $backupFile = "backups/pg-$timestamp.sql"
 
 Write-Host "[upgrade] backup postgres"
-docker compose -f infra/docker-compose.yml exec -T postgres pg_dump -U safeguild safeguild | Out-File -FilePath $backupFile -Encoding utf8
+docker compose -f infra/docker-compose.yml exec -T postgres pg_dump -U oris oris | Out-File -FilePath $backupFile -Encoding utf8
 
 Write-Host "[upgrade] pulling latest images"
 docker compose -f infra/docker-compose.yml pull

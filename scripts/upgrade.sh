@@ -12,7 +12,7 @@ echo "[upgrade] current=$CURRENT_VERSION target=$TARGET_VERSION"
 echo "[upgrade] backup postgres"
 mkdir -p backups
 BACKUP_FILE="backups/pg-$(date +%Y%m%d-%H%M%S).sql"
-docker compose -f infra/docker-compose.yml exec -T postgres pg_dump -U safeguild safeguild > "$BACKUP_FILE"
+docker compose -f infra/docker-compose.yml exec -T postgres pg_dump -U oris oris > "$BACKUP_FILE"
 
 echo "[upgrade] pulling latest images"
 docker compose -f infra/docker-compose.yml pull

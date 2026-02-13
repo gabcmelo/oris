@@ -21,7 +21,7 @@
    - generate voice token
    - moderation guard (self block) and moderation action
 3. Frontend production build:
-   - `npm run build` inside `safeguild-web`.
+   - `npm run build` inside `oris-web`.
 
 ## Run targets
 - Web: http://localhost:5173

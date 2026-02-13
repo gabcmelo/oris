@@ -14,12 +14,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/jackc/pgx/v5/pgxpool"
-	bootstrap "safeguild/backend/internal/app"
-	httpapp "safeguild/backend/internal/app/http"
-	httpmiddleware "safeguild/backend/internal/app/http/middleware"
-	corejwt "safeguild/backend/internal/core/auth/jwt"
-	appconfig "safeguild/backend/internal/core/config"
-	authmodule "safeguild/backend/internal/modules/auth"
+	bootstrap "oris/backend/internal/app"
+	httpapp "oris/backend/internal/app/http"
+	httpmiddleware "oris/backend/internal/app/http/middleware"
+	corejwt "oris/backend/internal/core/auth/jwt"
+	appconfig "oris/backend/internal/core/config"
+	authmodule "oris/backend/internal/modules/auth"
 )
 
 type User struct {
@@ -208,7 +208,7 @@ func main() {
 		},
 	})
 
-	log.Printf("SafeGuild API on :8080")
+	log.Printf("Oris API on :8080")
 	if err := r.Run(cfg.HTTPAddr); err != nil {
 		log.Fatal(err)
 	}

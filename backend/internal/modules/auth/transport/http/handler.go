@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"safeguild/backend/internal/modules/auth/domain"
-	"safeguild/backend/internal/modules/auth/usecase"
+	"oris/backend/internal/modules/auth/domain"
+	"oris/backend/internal/modules/auth/usecase"
 )
 
 type Handler struct {

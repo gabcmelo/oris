@@ -21,7 +21,7 @@ type Config struct {
 func Load() Config {
 	return Config{
 		HTTPAddr:         envOr("HTTP_ADDR", ":8080"),
-		DatabaseURL:      envOr("DATABASE_URL", "postgres://safeguild:safeguild@postgres:5432/safeguild?sslmode=disable"),
+		DatabaseURL:      envOr("DATABASE_URL", "postgres://oris:oris@postgres:5432/oris?sslmode=disable"),
 		JWTSecret:        envOr("JWT_SECRET", "dev-secret"),
 		AppVersion:       envOr("APP_VERSION", "0.1.0"),
 		AppChannel:       envOr("APP_CHANNEL", "stable"),

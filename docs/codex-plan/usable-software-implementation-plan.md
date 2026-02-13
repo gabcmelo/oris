@@ -1,4 +1,4 @@
-# Usable Software Implementation Plan (SafeGuild / Voz do Povo)
+# Usable Software Implementation Plan (Oris)
 
 ## 1. Product Focus (locked)
 

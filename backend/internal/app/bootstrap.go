@@ -1,7 +1,7 @@
 package app
 
 import (
-	backendhttp "safeguild/backend/internal/app/http"
+	backendhttp "oris/backend/internal/app/http"
 
 	"github.com/gin-gonic/gin"
 )

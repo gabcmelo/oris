@@ -1,10 +1,10 @@
-# Mapeamento de projetos e canais para orientar o “Voz do Povo”
+# Mapeamento de projetos e canais para orientar o “Oris”
 
 ## Resumo executivo
 
 O ecossistema de comunicação/comunidades (chat + voz + vídeo) está dividido em dois “mundos” que raramente se encaixam sem dor: (1) **produtos completos de comunidade/mensageria** (ex.: Discourse, Rocket.Chat, Zulip, ecossistema Matrix/Element, Nextcloud Talk) e (2) **infra de mídia WebRTC** (SFU/gateways/TURN, como LiveKit, mediasoup, Janus e coturn). Como consequência, quase todo projeto que tenta virar “Discord/Slack/Zoom self-hosted” acaba tropeçando em três frentes: **operação**, **governança/moderação** e **licenciamento**. citeturn18view0turn5view3turn6view1turn17view0turn9view2turn40view1turn29view0turn5view0turn5view2
 
-Do ponto de vista de estratégia de produto, a maior oportunidade para o “Voz do Povo” não é “mais um chat”: é **entregar soberania de dados + governança comunitária + deploy/observability por padrão**, com uma arquitetura de mídia que não te prenda num único backend. Em termos práticos: começar com **um MVP de texto/presença + moderação básica + export/backup** e ir adicionando voz/vídeo com rigor operacional (TURN, métricas, limites), em vez de prometer “RTC completo” e cair num buraco sem fundo. citeturn40view1turn5view2turn29view1turn25view1turn38search3
+Do ponto de vista de estratégia de produto, a maior oportunidade para o “Oris” não é “mais um chat”: é **entregar soberania de dados + governança comunitária + deploy/observability por padrão**, com uma arquitetura de mídia que não te prenda num único backend. Em termos práticos: começar com **um MVP de texto/presença + moderação básica + export/backup** e ir adicionando voz/vídeo com rigor operacional (TURN, métricas, limites), em vez de prometer “RTC completo” e cair num buraco sem fundo. citeturn40view1turn5view2turn29view1turn25view1turn38search3
 
 Nos canais de distribuição, há um choque cultural: **Product Hunt** premia marketing e polish; **Show HN** e **r/selfhosted** punem marketing e fricção (pedem demo fácil, transparência e pouco spam). Isso impacta diretamente como lançar: primeiro credibilidade técnica (GitHub + Docker + demo), depois “vitrine” (Product Hunt). citeturn27search0turn27search1turn28search2turn28search14
 
@@ -12,15 +12,15 @@ Por fim, licenças: o cenário é uma colcha de retalhos—MIT/Apache convivem c
 
 ## Critérios e metodologia
 
-Foram priorizados projetos e serviços que: (a) são frequentemente citados como alternativas self-hosted/OSS (chat/comunidade ou RTC), (b) têm sinais de maturidade (stars, releases recentes, volume de issues/PRs), e (c) têm implicações claras para o backlog do “Voz do Povo”: **moderação**, **identidade**, **export/backup**, **observability** e **infra de mídia**. As principais evidências vieram das páginas oficiais dos repositórios (GitHub/GitLab), documentação oficial e políticas/regras de marketplaces/comunidades (Product Hunt, Show HN, r/selfhosted, F-Droid, Docker Hub, GitHub Marketplace). citeturn27search0turn27search1turn28search2turn27search2turn28search0turn27search3
+Foram priorizados projetos e serviços que: (a) são frequentemente citados como alternativas self-hosted/OSS (chat/comunidade ou RTC), (b) têm sinais de maturidade (stars, releases recentes, volume de issues/PRs), e (c) têm implicações claras para o backlog do “Oris”: **moderação**, **identidade**, **export/backup**, **observability** e **infra de mídia**. As principais evidências vieram das páginas oficiais dos repositórios (GitHub/GitLab), documentação oficial e políticas/regras de marketplaces/comunidades (Product Hunt, Show HN, r/selfhosted, F-Droid, Docker Hub, GitHub Marketplace). citeturn27search0turn27search1turn28search2turn27search2turn28search0turn27search3
 
 ## Projetos e serviços mapeados
 
-A tabela abaixo é **priorizada** pelo quanto cada item ajuda a construir (ou a posicionar) o “Voz do Povo” com o menor risco de retrabalho.
+A tabela abaixo é **priorizada** pelo quanto cada item ajuda a construir (ou a posicionar) o “Oris” com o menor risco de retrabalho.
 
 image_group{"layout":"carousel","aspect_ratio":"16:9","query":["Jitsi Meet interface screenshot","Rocket.Chat interface screenshot","Element web Matrix client screenshot","Zulip topics interface screenshot"],"num_per_query":1}
 
-| Nome | URL | Categoria | Licença | Maturidade (stars / última atividade) | Linguagem/stack | Funcionalidades principais | Lacunas/oportunidades para Voz do Povo | Prioridade |
+| Nome | URL | Categoria | Licença | Maturidade (stars / última atividade) | Linguagem/stack | Funcionalidades principais | Lacunas/oportunidades para Oris | Prioridade |
 |---|---|---|---|---|---|---|---|---|
 | entity["organization","LiveKit","webrtc sfu stack"] | `https://github.com/livekit/livekit` | SFU/WebRTC (OSS + Cloud) | Apache-2.0 | 17k★; release v1.9.11 (2026-01-15); 143 issues; 33 PRs citeturn40view1 | Go (server); SDKs; WebRTC via Pion citeturn40view1 | SFU; deploy (binário/Docker/K8s); SDKs; menção a APIs de moderação e E2EE citeturn40view1 | É “stack”, não produto final: espaço para governança, UX comunitária e portabilidade | alta |
 | entity["organization","mediasoup","webrtc sfu library"] | `https://github.com/versatica/mediasoup` | SFU (baixo nível) | ISC | 7.1k★; release 3.19.17 (2026-02-05); 15 issues; 11 PRs citeturn29view0 | C++ (worker) + Node bindings + Rust citeturn29view0 | SFU modular; controle fino de mídia; demo online citeturn29view0 | Oportunidade: transformar “infra de SFU” em experiência de comunidade (admin, métricas, moderação) | alta |
@@ -55,7 +55,7 @@ Governança comunitária é subatendida. Discourse e Zulip são fortes em estrut
 
 Abaixo, uma leitura pragmática dos canais solicitados, com base em regras/documentação públicas e no “fit cultural” para self-hosted e devtools.
 
-| Canal | Prós | Contras | Recomendação objetiva para o Voz do Povo |
+| Canal | Prós | Contras | Recomendação objetiva para o Oris |
 |---|---|---|---|
 | entity["company","Product Hunt","product discovery platform"] | Boa vitrine; guia oficial de lançamento e “best practices” citeturn27search0 | Pressiona por polish e marketing; fácil “queimar” o lançamento cedo | Lançar **depois** de ter demo estável + docs + prints/vídeo; usar como amplificador |
 | entity["organization","Hacker News","tech news forum"] (Show HN) | Público técnico; regras incentivam testar sem barreiras; feedback honesto citeturn27search1turn27search10 | Punição instantânea a marketing; se não estiver pronto, vira backlash citeturn27search1 | Fazer Show HN quando houver demo pública **e** algo técnico real (arquitetura, trade-offs) |
@@ -88,7 +88,7 @@ Abaixo, 10 integrações que aumentam adoção e reduzem risco operacional—com
 
 Posicionamento (open-core vs fully open-source):
 
-Se o “Voz do Povo” quer ganhar o público de comunidades e self-hosted, **credibilidade > feature list**. Um núcleo com licença OSI (Apache/MIT/AGPL etc.) facilita adoção e distribuição; a Open Source Initiative explicita que “open source” depende de termos de distribuição compatíveis com critérios como redistribuição livre. citeturn37search1
+Se o “Oris” quer ganhar o público de comunidades e self-hosted, **credibilidade > feature list**. Um núcleo com licença OSI (Apache/MIT/AGPL etc.) facilita adoção e distribuição; a Open Source Initiative explicita que “open source” depende de termos de distribuição compatíveis com critérios como redistribuição livre. citeturn37search1
 
 Open-core pode funcionar, mas só se você for brutalmente transparente sobre o que é “core” e o que é comercial. O problema é que, para esse público, open-core frequentemente soa como “bait-and-switch”. E quando você mistura isso com licenças fortes (AGPL) e mudanças de licenciamento no ecossistema (como o caso público de relicenciamento para AGPL em projetos de observability), você aumenta a desconfiança e o risco de adoção. citeturn35search10turn35search18turn35search8turn37search0
 
@@ -96,21 +96,21 @@ Minha recomendação (opinião e estratégia): **fully open-source para o core**
 
 ## Sugestões de nomes e descrições curtas para listings
 
-Voz do Povo é um nome forte, mas para canais como GitHub/Product Hunt você provavelmente vai querer um subtítulo que explique “o que é” em 1 linha.
+Oris é um nome forte, mas para canais como GitHub/Product Hunt você provavelmente vai querer um subtítulo que explique “o que é” em 1 linha.
 
-Voz do Povo — Comunidades soberanas  
+Oris — Comunidades soberanas  
 Plataforma self-hosted de comunidade com governança, portabilidade e comunicação em tempo real.
 
-Voz do Povo — Community OS  
+Oris — Community OS  
 Chat + moderação + exportação + observability, com voz/vídeo modular quando você precisar.
 
-Voz do Povo — Civic Comms  
+Oris — Civic Comms  
 Comunicação para comunidades e coletivos: controle de dados, regras claras e infraestrutura transparente.
 
-Voz do Povo — Self-hosted Communities  
+Oris — Self-hosted Communities  
 Uma alternativa prática para construir comunidades com autonomia e trilha de governança.
 
-Voz do Povo — Open Community Stack  
+Oris — Open Community Stack  
 Um stack open-source para comunidades: identidade, mensagens, mídia e auditoria.
 
 ## Plano de ação tático e checklist de lançamento
@@ -119,7 +119,7 @@ Um stack open-source para comunidades: identidade, mensagens, mídia e auditoria
 
 ```mermaid
 gantt
-    title Plano tático 90 dias (Voz do Povo) — início 2026-02-12
+    title Plano tático 90 dias (Oris) — início 2026-02-12
     dateFormat  YYYY-MM-DD
     section Fundação
     Repo público + licença + templates            :done, a1, 2026-02-12, 7d
@@ -147,8 +147,8 @@ Comunidade: abrir issues com templates; criar espaço de discussão; primeira ro
 
 ### Arquivos exportáveis para backlog e planejamento
 
-[Download do mapeamento (20 projetos/serviços)](sandbox:/mnt/data/voz_do_povo_mapeamento_20_projetos.csv)
+[Download do mapeamento (20 projetos/serviços)](sandbox:/mnt/data/oris_mapeamento_20_projetos.csv)
 
-[Download do backlog de features recomendadas](sandbox:/mnt/data/voz_do_povo_backlog_features.csv)
+[Download do backlog de features recomendadas](sandbox:/mnt/data/oris_backlog_features.csv)
 
-[Download do plano tático 90 dias (Markdown)](sandbox:/mnt/data/voz_do_povo_plano_90_dias.md)
+[Download do plano tático 90 dias (Markdown)](sandbox:/mnt/data/oris_plano_90_dias.md)

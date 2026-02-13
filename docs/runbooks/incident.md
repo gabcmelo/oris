@@ -7,8 +7,8 @@
 
 ## Quick diagnostics
 1. `docker compose -f infra/docker-compose.yml ps`
-2. `docker logs --tail 200 safeguild-api`
-3. `docker logs --tail 200 safeguild-web`
+2. `docker logs --tail 200 oris-api`
+3. `docker logs --tail 200 oris-web`
 
 ## Mitigation options
 1. Restart affected service.

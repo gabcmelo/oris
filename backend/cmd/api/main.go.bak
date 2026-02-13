@@ -202,7 +202,7 @@ func main() {
 		}
 	}
 
-	log.Printf("SafeGuild API on :8080")
+	log.Printf("Oris API on :8080")
 	if err := r.Run(":8080"); err != nil {
 		log.Fatal(err)
 	}

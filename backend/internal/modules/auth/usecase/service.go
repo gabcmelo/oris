@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-	"safeguild/backend/internal/modules/auth/domain"
+	"oris/backend/internal/modules/auth/domain"
 )
 
 type Service struct {

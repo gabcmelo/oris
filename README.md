@@ -1,6 +1,6 @@
-# SafeGuild (Voz do Povo)
+# Oris
 
-Open-source, self-hosted communication platform focused on safety defaults, community moderation, and practical deployment.
+Build your own voice community platform. Open-source, self-hosted real-time infrastructure powered by WebRTC.
 
 ## System overview
 1. Backend: Go + Gin + PostgreSQL (+ Redis support)

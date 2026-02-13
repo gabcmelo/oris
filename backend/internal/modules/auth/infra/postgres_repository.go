@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"safeguild/backend/internal/modules/auth/domain"
+	"oris/backend/internal/modules/auth/domain"
 )
 
 type PostgresRepository struct {

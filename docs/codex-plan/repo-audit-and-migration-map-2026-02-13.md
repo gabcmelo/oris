@@ -48,9 +48,9 @@
 
 ## Pontos sensiveis mapeados
 1. Go imports sensiveis:
-   - modulo `safeguild/backend` deve ser preservado para evitar quebra em massa.
+   - modulo `oris/backend` deve ser preservado para evitar quebra em massa.
 2. Build path backend:
-   - Docker usa `go build -o safeguild-api ./cmd/api` (`backend/Dockerfile`).
+   - Docker usa `go build -o oris-api ./cmd/api` (`backend/Dockerfile`).
 3. Build path frontend:
    - Vite depende de `frontend/src/main.jsx` e `frontend/src/App.jsx`.
 4. Infra path:

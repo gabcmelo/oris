@@ -1,4 +1,4 @@
-module safeguild/backend
+module oris/backend
 
 go 1.22
 

@@ -1,4 +1,4 @@
-# Relatório analítico de lacunas do Discord, Slack e Zoom para orientar o “Voz do Povo”
+# Relatório analítico de lacunas do Discord, Slack e Zoom para orientar o “Oris”
 
 ## Resumo executivo
 
@@ -12,7 +12,7 @@ Os achados mais relevantes:
 - **E2EE (criptografia ponta a ponta) costuma quebrar recursos**. No Zoom, ativar E2EE desabilita uma lista grande de funcionalidades (ex.: gravação na nuvem e chat contínuo), o que prova que “privacidade forte” precisa ser tratada como **modo operacional** com UX e expectativas bem definidas. citeturn0search7turn0search3  
 - **Incidentes e “riscos de cadeia de fornecedores” são reais**. Discord reportou incidente envolvendo fornecedor terceiro de atendimento (não “breach do core”, mas afetando dados de usuários que falaram com suporte). Zoom teve histórico de questionamentos e ações regulatórias por alegações de segurança/criptografia; e Slack divulgou incidente de acesso não autorizado a repositórios de código via tokens de funcionários. citeturn8search0turn7search3turn11view2  
 
-Tese prática para o “Voz do Povo”: se vocês miram comunidades (e não o “SaaS corporativo clássico”), a vantagem competitiva mais defensável é **soberania + governança + portabilidade + modos de privacidade**, com operação simples de auto-hospedagem e observabilidade nativa. Os concorrentes tendem a falhar nisso por incentivos de negócio e por arquitetura legada. citeturn2view0turn11view0turn5view0turn0search7
+Tese prática para o “Oris”: se vocês miram comunidades (e não o “SaaS corporativo clássico”), a vantagem competitiva mais defensável é **soberania + governança + portabilidade + modos de privacidade**, com operação simples de auto-hospedagem e observabilidade nativa. Os concorrentes tendem a falhar nisso por incentivos de negócio e por arquitetura legada. citeturn2view0turn11view0turn5view0turn0search7
 
 Premissas (conforme solicitado): público-alvo = comunidades e organizações não estritamente corporativas; equipe e orçamento = **não especificados**; requisitos legais/regulatórios = **não especificados**.
 
@@ -87,7 +87,7 @@ Zoom é, por desenho, “reunião-first”: ótimo para encontros síncronos, fr
 **Falhas operacionais**
 
 - **Segurança depende do anfitrião configurar certo**: o guia de segurança do Zoom recomenda passcode, sala de espera (Waiting Room) ou exigir autenticação; e afirma que, se nenhuma opção estiver habilitada, o Zoom “automaticamente” protegerá reuniões com Waiting Room. Isso mostra duas coisas: (1) a plataforma historicamente precisou endurecer defaults devido a abusos; (2) a carga operacional recai no organizador. citeturn7search1turn7search5  
-- **E2EE quebra recursos**: a documentação oficial deixa claro que habilitar criptografia ponta a ponta desabilita recursos como gravação na nuvem, transcrição ao vivo, live streaming e “continuous meeting chat”, além de excluir clientes (web app / Web SDK) e endpoints legados (telefone, SIP/H.323). Isso é um mapa direto de trade-offs que vocês devem explicitar desde o design do “Voz do Povo”. citeturn0search7turn0search3  
+- **E2EE quebra recursos**: a documentação oficial deixa claro que habilitar criptografia ponta a ponta desabilita recursos como gravação na nuvem, transcrição ao vivo, live streaming e “continuous meeting chat”, além de excluir clientes (web app / Web SDK) e endpoints legados (telefone, SIP/H.323). Isso é um mapa direto de trade-offs que vocês devem explicitar desde o design do “Oris”. citeturn0search7turn0search3  
 
 **Falhas estratégicas**
 
@@ -99,7 +99,7 @@ Zoom é, por desenho, “reunião-first”: ótimo para encontros síncronos, fr
 
 ### Tabela de lacunas prioritárias
 
-| Problema | Impacto para comunidades | Evidência / fonte | Prioridade p/ “Voz do Povo” |
+| Problema | Impacto para comunidades | Evidência / fonte | Prioridade p/ “Oris” |
 |---|---|---|---|
 | Retenção curta de trilhas administrativas | Investigações e accountability ficam inviáveis após semanas; facilita abuso de poder e impunidade | Audit log do Discord retido por 45 dias; comunidade pede export para record keeping citeturn8search30turn8search6 | Alta (P0) |
 | Exportação/portabilidade limitada ou burocrática | Migração e backup viram projeto caro; “memória comunitária” se perde | Slack gratuito exporta só canais públicos; arquivos com limite temporal; export completo requer planos/adesão citeturn11view0turn2view0 | Alta (P0) |
@@ -122,7 +122,7 @@ Zoom é, por desenho, “reunião-first”: ótimo para encontros síncronos, fr
 
 4) **Risco reputacional é cumulativo**: incidentes em fornecedor, falhas antigas e mudanças em termos (especialmente com IA) corroem confiança porque o usuário percebe “assimetria”: a plataforma sempre pode mudar as regras. citeturn8search0turn10news42turn11view2  
 
-## Features recomendadas para o Voz do Povo
+## Features recomendadas para o Oris
 
 A seguir, uma lista consolidada de features derivadas das lacunas. “Complexidade” é uma estimativa relativa (baixa/média/alta) sem equipe/orçamento definidos.
 
@@ -193,7 +193,7 @@ Critérios de aceitação:
 
 ```mermaid
 gantt
-    title Roadmap sugerido — Voz do Povo (início 2026-02-12)
+    title Roadmap sugerido — Oris (início 2026-02-12)
     dateFormat  YYYY-MM-DD
     axisFormat  %d/%m
 
@@ -296,4 +296,4 @@ flowchart LR
 
 **Segurança vs cadeia de fornecedores**: incidente em fornecedor de suporte no Discord e o caso de SDK de terceiro no Zoom mostram que “dependência externa” abre superfície de risco. Arquitetura modular precisa vir com inventário e governança de fornecedores (subprocessadores, SDKs, plugins). citeturn8search0turn7search0turn0search2  
 
-**IA e consentimento**: o caso do Zoom mostrou que mudanças em termos e “consentimento por admin” detonam confiança mesmo quando a empresa recua e esclarece. Para o “Voz do Povo”, o caminho defensável é: **consentimento explícito por recurso**, logs de consentimento e transparência em UI. citeturn10search4turn10news42turn10search7
+**IA e consentimento**: o caso do Zoom mostrou que mudanças em termos e “consentimento por admin” detonam confiança mesmo quando a empresa recua e esclarece. Para o “Oris”, o caminho defensável é: **consentimento explícito por recurso**, logs de consentimento e transparência em UI. citeturn10search4turn10news42turn10search7

@@ -1,10 +1,10 @@
 services:
   api:
     build: ../backend
-    container_name: safeguild-api
+    container_name: oris-api
     environment:
       - JWT_SECRET=change-me
-      - DATABASE_URL=postgres://safeguild:safeguild@postgres:5432/safeguild?sslmode=disable
+      - DATABASE_URL=postgres://oris:oris@postgres:5432/oris?sslmode=disable
       - APP_VERSION=0.1.0
       - APP_CHANNEL=stable
       - LIVEKIT_URL=ws://livekit:7880
@@ -20,7 +20,7 @@ services:
 
   web:
     build: ../frontend
-    container_name: safeguild-web
+    container_name: oris-web
     environment:
       - VITE_API_BASE_URL=http://localhost:8080/api/v1
     ports:
@@ -30,11 +30,11 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: safeguild-postgres
+    container_name: oris-postgres
     environment:
-      - POSTGRES_USER=safeguild
-      - POSTGRES_PASSWORD=safeguild
-      - POSTGRES_DB=safeguild
+      - POSTGRES_USER=oris
+      - POSTGRES_PASSWORD=oris
+      - POSTGRES_DB=oris
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ../database/migrations:/docker-entrypoint-initdb.d
@@ -43,13 +43,13 @@ services:
 
   redis:
     image: redis:7
-    container_name: safeguild-redis
+    container_name: oris-redis
     ports:
       - "6379:6379"
 
   livekit:
     image: livekit/livekit-server:latest
-    container_name: safeguild-livekit
+    container_name: oris-livekit
     command: ["--dev", "--bind", "0.0.0.0"]
     ports:
       - "7880:7880"
@@ -58,7 +58,7 @@ services:
 
   telemetry-agent:
     build: ../telemetry-agent
-    container_name: safeguild-telemetry-agent
+    container_name: oris-telemetry-agent
     environment:
       - OTLP_ENDPOINT=http://otel-collector:4318/v1/metrics
       - TELEMETRY_ENABLED=false
@@ -69,7 +69,7 @@ services:
 
   otel-collector:
     image: otel/opentelemetry-collector:0.105.0
-    container_name: safeguild-otel
+    container_name: oris-otel
     command: ["--config=/etc/otelcol/config.yaml"]
     volumes:
       - ../telemetry-agent/otel-collector-config.yaml:/etc/otelcol/config.yaml

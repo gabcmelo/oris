@@ -1,7 +1,7 @@
 # Runbook - Deploy (Self-host Basic)
 
 ## Objective
-Deploy SafeGuild stack on a host with Docker Compose.
+Deploy Oris stack on a host with Docker Compose.
 
 ## Steps
 1. Configure environment values in compose/env.

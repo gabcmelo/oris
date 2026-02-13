@@ -1,4 +1,4 @@
-# SafeGuild / Voz do Povo - MVP + Post-MVP Consolidated Plan
+# Oris - MVP + Post-MVP Consolidated Plan
 
 ## Goal
 Deliver a practical MVP fast, self-hosted first, with safe defaults and clear path to desktop and observability.

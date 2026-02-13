@@ -2,10 +2,10 @@ package auth
 
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
-	corejwt "safeguild/backend/internal/core/auth/jwt"
-	"safeguild/backend/internal/modules/auth/infra"
-	authhttp "safeguild/backend/internal/modules/auth/transport/http"
-	"safeguild/backend/internal/modules/auth/usecase"
+	corejwt "oris/backend/internal/core/auth/jwt"
+	"oris/backend/internal/modules/auth/infra"
+	authhttp "oris/backend/internal/modules/auth/transport/http"
+	"oris/backend/internal/modules/auth/usecase"
 )
 
 type Handler = authhttp.Handler

@@ -8,7 +8,7 @@ This project is web-first for MVP. Desktop support will be added after MVP stabi
    - `preload` for secure IPC boundaries.
    - `renderer` pointing to frontend build output.
 2. Keep backend self-host model unchanged.
-3. Desktop client connects to existing SafeGuild server endpoints.
+3. Desktop client connects to existing Oris server endpoints.
 
 ## Planned milestones
 1. Basic shell app with login and community join.
