@@ -1,0 +1,27 @@
+id,title,area,status,priority,owner,created_at,updated_at,depends_on,pr,notes
+0001,Plan governance and task structure,docs,DONE,P1,Codex,2026-01-15,2026-01-15,,,Estrutura inicial de tasks criada
+0002,Research analysis and mapping,product,DONE,P1,Codex,2026-01-16,2026-01-16,,,Análise de requisitos e mapeamento
+0003,MVP hardening and test readiness,backend,DONE,P0,Codex,2026-01-17,2026-01-17,,,MVP hardening baseline
+0004,Close MVP gaps for testing,backend,DONE,P0,Codex,2026-01-18,2026-01-18,0003,,Fechamento de gaps do MVP
+0005,Usable product plan,product,DONE,P1,Codex,2026-01-19,2026-01-19,,,Planejamento de produto usável
+0006,UI usability baseline,frontend,DONE,P1,Codex,2026-01-20,2026-01-20,,,Baseline de usabilidade da UI
+0007,Discord-like community UX,frontend,DONE,P1,Codex,2026-01-21,2026-01-21,0006,,UX similar ao Discord implementada
+0008,Voice presence realtime,frontend,DONE,P1,Codex,2026-01-22,2026-01-22,,,Presença em voz em tempo real
+0009,Usability polish realtime,frontend,DONE,P1,Codex,2026-01-23,2026-01-23,0008,,Polish de usabilidade realtime
+0010,MVP improvement review,product,DONE,P1,Codex,2026-01-24,2026-01-24,,,Review de melhorias do MVP
+0011,Backend restructure and modularization,backend,DOING,P0,Codex,2026-01-25,2026-02-12,,,Refatoração modular do backend monolítico
+0012,GitHub Copilot project context,docs,DONE,P2,Codex,2026-01-26,2026-01-26,,,Contexto de projeto para Copilot
+0013,Repo audit and migration map,docs,DONE,P1,Codex,2026-01-27,2026-01-27,,,Auditoria e mapa de migração
+0014,Monorepo structure and standards,infra,DONE,P1,Codex,2026-01-28,2026-01-28,,,Estrutura e padrões do monorepo
+0015,P0 Security hardening (voice/ws/cors/invites),backend,DONE,P0,Codex,2026-02-13,2026-02-13,,,Voice token + WS origin + CORS + invite accounting fixes
+0016,Backend modularization and security hardening,backend,BACKLOG,P0,TBD,2026-02-12,2026-02-12,0011,,Continuação da modularização com hardening
+0017,Frontend UX flows and client packaging,frontend,BACKLOG,P1,TBD,2026-02-12,2026-02-12,,,Fluxos de UX e empacotamento do cliente
+0018,Voice token validation hardening,backend,CANCELLED,P0,TBD,2026-02-12,2026-02-12,0011,,Duplicate: completed in 0015
+0019,WebSocket origin validation,backend,CANCELLED,P0,TBD,2026-02-12,2026-02-12,0011,,Duplicate: completed in 0015
+0020,CORS configuration for web client,backend,CANCELLED,P0,TBD,2026-02-12,2026-02-12,,,Duplicate: completed in 0015
+0021,Invite accounting fix,backend,CANCELLED,P0,TBD,2026-02-12,2026-02-12,,,Duplicate: completed in 0015
+0022,Admin telemetry RBAC enforcement,backend,CANCELLED,P0,TBD,2026-02-12,2026-02-12,,,Duplicate: completed in 0015
+0023,Community and voice MVP feature,product,BACKLOG,P0,TBD,2026-02-12,2026-02-12,"0004,0008",,Epic: Community + Voice MVP completo
+0024,Rate limiting baseline,backend,BACKLOG,P0,TBD,2026-02-12,2026-02-12,0011,,Rate limiting para endpoints críticos
+0025,Protected Community Mode operational rules,backend,BACKLOG,P0,TBD,2026-02-12,2026-02-12,,,Regras operacionais além da flag safe_mode
+0026,Integration tests for auth/invite/moderation/voice/ws,backend,BACKLOG,P0,TBD,2026-02-12,2026-02-12,0015,,Testes de integração end-to-end

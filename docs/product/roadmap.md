@@ -1,82 +1,68 @@
 # Oris Roadmap
 
-This roadmap is outcome-driven. Features exist to achieve product outcomes, not to collect checkboxes.
-Build your own voice community platform. Open-source, self-hosted real-time infrastructure for creators and gaming communities, powered by WebRTC.
+## Document Purpose
+1. This document defines phase sequencing.
+2. This document includes a dated status snapshot for clarity.
+3. Task-level execution priority lives in `docs/product/tasks/backlog.md`.
 
-## Phase 0 - Foundations (v0.1)
+## Status Snapshot (2026-02-13)
 
-Outcome: a developer can run Oris locally and on a VPS, join voice, and moderate basic abuse.
+Completed in code:
+1. Local auth and session endpoints (`/auth/login`, `/auth/refresh`, `/auth/logout`).
+2. Communities, channels, membership roles, moderation actions, audit logs.
+3. Voice token endpoint with membership and channel-type guardrails.
+4. WebSocket origin guard and HTTP CORS allowlist (`APP_ALLOWED_ORIGINS`).
+5. Telemetry admin RBAC and invite usage accounting fix.
 
-Core:
-1. Auth (local) + sessions.
-2. Communities/servers, channels, roles/permissions (minimum viable).
-3. Voice join/leave, speaking state, mute/deafen.
-4. Web client (PWA-first) baseline UX.
+Partially complete:
+1. Protected Community Mode exists as `safe_mode_enabled` flag, but no automatic operational policies yet.
 
-Safety baseline:
-1. Rate limiting (login, join, message, invite).
-2. Basic moderation actions: mute/ban/kick.
-3. Audit log (who did what, when).
-4. Reporting (minimal flow).
+Not complete:
+1. Rate limiting baseline.
+2. Anti-abuse and quarantine operational flows.
+3. Integration test suite for guardrails and regressions.
+4. Extensions v1 implementation (current endpoint is still stub).
 
-Ops baseline:
-1. Docker Compose one-command up.
-2. Basic metrics + logs (at least API + signaling + media health indicators).
-3. Minimal admin panel (or CLI) for initial operations.
+## Execution Order
 
-Deliverable:
-1. `docker compose up -d` working guide + `.env.example`.
-2. Protected Community Mode configuration template (defaults).
+### Phase 0 - Foundations (active)
+Outcome:
+1. A developer can self-host Oris, run core community flows, and rely on minimum safety controls.
 
-## Phase 1 - MVP (v1.0)
+Remaining gate items:
+1. Rate limiting on sensitive endpoints.
+2. Protected Community Mode operational rules.
+3. Integration tests for auth, invite, moderation, voice token, and websocket guardrails.
 
-Outcome: Oris is viable for real communities (creators/devs/gamers) with safety defaults.
+### Phase 1 - MVP
+Outcome:
+1. Oris becomes viable for real creator-led communities.
 
-Core improvements:
-1. Better onboarding and invite flows.
-2. Presence and realtime UX polish.
-3. Resilient signaling & reconnect logic.
-4. Voice quality tuning (codec/bitrate defaults, jitter handling where possible).
+Core goals:
+1. Onboarding and invite experience polish.
+2. Presence and realtime UX resilience.
+3. Voice quality and reconnect hardening.
+4. Extensions v1 (webhook-first) only after Phase 0 gate is done.
 
-Safety by default:
-1. Protected Community Mode as a first-class template.
-2. Quarantine flow for new accounts.
-3. Anti-raid presets (join storms, spam bursts).
-4. Case management basics (reports, actions, notes).
+### Phase 2 - Expansion
+Outcome:
+1. Expand beyond initial niche without changing core architecture.
 
-Extensibility:
-1. Oris Extensions v1 (events + scopes + auditing + rate limiting).
-2. Plugin packaging + install/enable/disable.
-3. Official plugins: Live Presence + Alerts (YouTube/Twitch) and Safety Pack.
+Goals:
+1. Targeted ecosystem plugins.
+2. Better admin and observability UX.
+3. Optional SSO path.
 
-Success metrics tracked:
-1. Voice: join time, session success rate, TURN usage ratio, packet loss proxy.
-2. Safety: raids blocked, false positives review rate.
-3. Product: D7 retention, weekly active voice participants.
+### Phase 3 - Scale and Hardening
+Outcome:
+1. Reliable operation at larger scale.
 
-## Phase 2 - Growth (v1.x)
+Goals:
+1. Multi-node and orchestration path.
+2. Advanced abuse mitigation options.
+3. Security hardening and operational controls.
 
-Outcome: lower-friction migration and richer niche value without bloating core.
-
-1. Discord import tools (structure + roles mapping where feasible).
-2. GitHub plugin (issues/PR/releases).
-3. Steam presence-lite plugin (status/roles/events).
-4. Better admin UI and moderation workflows.
-5. Observability dashboards shipped by default (Grafana templates).
-6. Optional SSO (OIDC) for orgs.
-
-## Phase 3 - Scale & Hardening (v2.0)
-
-Outcome: Oris can run reliably at larger scale and stricter environments.
-
-1. Kubernetes deployment path (charts/manifests).
-2. Multi-node scaling strategy (clear separation of control/media plane).
-3. Advanced abuse mitigation options.
-4. Optional E2EE advanced mode (with clear trade-offs and compatibility matrix).
-5. Security hardening guides and automated checks.
-
-## Explicit Non-Goals (MVP)
-
-1. Deep integrations with console/platform ecosystems (Xbox/PlayStation/Nintendo/Epic).
-2. All-in-one everything scope.
-3. Partner-dependent features as core promises.
+## Explicit Non-Goals Before PMF
+1. Deep console platform integrations.
+2. Feature parity race with large communication suites.
+3. Marketplace-scale plugin surface before foundation maturity.

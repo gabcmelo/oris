@@ -10,6 +10,7 @@
 2. Open:
    - `http://localhost:5173`
    - `http://localhost:8080/healthz`
+3. CORS/WS origin allowlist is configured by `APP_ALLOWED_ORIGINS` (default: `http://localhost:5173`).
 
 ## Backend only
 1. `cd backend`
